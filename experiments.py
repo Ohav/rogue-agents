@@ -80,7 +80,7 @@ def define_games_symmetric(name, output, **kwargs):
 def load_and_run_symmetric(input_json, name, model, experiment_output, **kwargs):
     from variants.symmetric.symm_game import run_from_file
 
-    message_file = 'json_files/messages_facts_positive.json' if kwargs.get('positive', True) else 'json_files/messages_facts_positive.json'
+    message_file = 'json_files/messages_facts_positive.json'
     task_info = {
         "general": {
             "suspect_count": kwargs.get('suspect_count', 6),
@@ -107,7 +107,7 @@ def load_and_run_symmetric(input_json, name, model, experiment_output, **kwargs)
 def load_and_run_asymmetric(input_json, name, model, experiment_output, **kwargs):
     from variants.asymmetric.intel_game import run_from_file
 
-    message_file = 'json_files/task_asymmetric_positive.json' if kwargs.get('positive', True) else 'json_files/task_asymmetric.json'
+    message_file = 'json_files/messages_asymmetric_positive.json' if kwargs.get('positive', True) else 'json_files/messages_asymmetric.json'
     task_info = {
         "general": {
             "suspect_count": kwargs.get('suspect_count', 6),
@@ -133,7 +133,7 @@ def load_and_run_asymmetric(input_json, name, model, experiment_output, **kwargs
 def define_games(name, output, **kwargs):
     from variants.asymmetric.intel_env import IntelEnv
     from game_memory import IntelGameMemory
-    message_file = 'json_files/task_asymmetric_positive.json' if kwargs.get('positive', True) else 'json_files/task_asymmetric.json'
+    message_file = 'json_files/messages_asymmetric_positive.json' if kwargs.get('positive', True) else 'json_files/messages_asymmetric.json'
     task_info = {
         "general": {
             "suspect_count": kwargs.get('suspect_count', 6),
@@ -158,31 +158,31 @@ def define_games(name, output, **kwargs):
         env.reset()
 
 
-def launch_slurm(name, count, run_type, slurm_output, model, experiment_output, gpu_count=0):
-    slurm_template = "#! /bin/sh\n " \
-                    "#SBATCH --job-name={job_name}_{i} \n" \
-                    "#SBATCH --output={slurm_output}/{job_name}_{i}.out\n" \
-                    "#SBATCH --error={slurm_output}/{job_name}_{i}.err\n" \
-                    "#SBATCH --account=gpu-research\n" \
-                    "#SBATCH --partition=gpu-h100-killable\n" \
-                    "#SBATCH --time=1440\n" \
-                    "#SBATCH --nodes=1\n"
-    if gpu_count != 0:
-        slurm_template += f"#SBATCH --gpus={gpu_count}\n"
+# def launch_slurm(name, count, run_type, slurm_output, model, experiment_output, gpu_count=0):
+#     slurm_template = "#! /bin/sh\n " \
+#                     "#SBATCH --job-name={job_name}_{i} \n" \
+#                     "#SBATCH --output={slurm_output}/{job_name}_{i}.out\n" \
+#                     "#SBATCH --error={slurm_output}/{job_name}_{i}.err\n" \
+#                     "#SBATCH --account=gpu-research\n" \
+#                     "#SBATCH --partition=gpu-h100-killable\n" \
+#                     "#SBATCH --time=1440\n" \
+#                     "#SBATCH --nodes=1\n"
+#     if gpu_count != 0:
+#         slurm_template += f"#SBATCH --gpus={gpu_count}\n"
 
-    slurm_template += "python /home/morg/students/ohavbarbi/multiAgent/experiments.py --name {job_name}_{i} --type {type} --model {model} --output {experiment_output}/{job_name}_{i}/ --gpu_count {gpu_count}\n"
+#     slurm_template += "python /home/morg/students/ohavbarbi/multiAgent/experiments.py --name {job_name}_{i} --type {type} --model {model} --output {experiment_output}/{job_name}_{i}/ --gpu_count {gpu_count}\n"
     
     
-    if not os.path.exists(slurm_output):
-        os.makedirs(slurm_output)
-    for i in range(1, count + 1):
-        cur_template = slurm_template.format(job_name=name, i=i, slurm_output=slurm_output, type=run_type, model=model, experiment_output=experiment_output, gpu_count=gpu_count)
-        file_name = f"{slurm_output}/{name}_{i}.slurm"
-        with open(file_name, 'w') as f:
-            f.write(cur_template)
-        os.chmod(file_name, 0o777)
-        print(f"Launching: {name}_{i}")
-        os.system(f"sbatch {file_name}")
+#     if not os.path.exists(slurm_output):
+#         os.makedirs(slurm_output)
+#     for i in range(1, count + 1):
+#         cur_template = slurm_template.format(job_name=name, i=i, slurm_output=slurm_output, type=run_type, model=model, experiment_output=experiment_output, gpu_count=gpu_count)
+#         file_name = f"{slurm_output}/{name}_{i}.slurm"
+#         with open(file_name, 'w') as f:
+#             f.write(cur_template)
+#         os.chmod(file_name, 0o777)
+#         print(f"Launching: {name}_{i}")
+#         os.system(f"sbatch {file_name}")
 
 
 
