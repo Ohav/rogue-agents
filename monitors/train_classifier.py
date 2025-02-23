@@ -159,7 +159,6 @@ def train_game(net, train_games, test_games, name, num_epochs=10, learning_rate=
     criterion = nn.BCELoss()  # Binary Cross-Entropy loss
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.01, total_iters=30)
-    last_total_loss = 999 * len(train_games)
 
     best_model = None
     best_f1_score = 0

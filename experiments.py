@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 def run_asymmetric(name, model, experiment_output, **kwargs):
     from agent_pipes import TransformersPipe
     from game_memory import IntelGameMemory
-    from env_intel.intel_game import game_loop
-    from env_intel.intel_env import IntelEnv
+    from variants.asymmetric.intel_game import game_loop
+    from variants.asymmetric.intel_env import IntelEnv
 
     if model == 'random':
         raise ValueError("Unsupported model: random")
@@ -49,7 +49,7 @@ def run_asymmetric(name, model, experiment_output, **kwargs):
 DEFAULT_AGENT_COUNT = 6
 KNOWLEDGE_SIZE = 3
 def define_games_symmetric(name, output, **kwargs):
-    from env_facts.symm_env import SymmEnv
+    from variants.symmetric.symm_env import SymmEnv
     from game_memory import SymmGameMemory
     message_file = 'json_files/messages_facts_positive.json' if kwargs.get('positive', True) else 'json_files/messages_facts_positive.json'
     task_info = {
@@ -78,7 +78,7 @@ def define_games_symmetric(name, output, **kwargs):
         env.reset()
 
 def load_and_run_symmetric(input_json, name, model, experiment_output, **kwargs):
-    from env_facts.symm_game import run_from_file
+    from variants.symmetric.symm_game import run_from_file
 
     message_file = 'json_files/messages_facts_positive.json' if kwargs.get('positive', True) else 'json_files/messages_facts_positive.json'
     task_info = {
@@ -105,7 +105,7 @@ def load_and_run_symmetric(input_json, name, model, experiment_output, **kwargs)
     run_from_file(input_json, model, int(kwargs['load_turn_count']), task_info, output_path, **kwargs)
 
 def load_and_run_asymmetric(input_json, name, model, experiment_output, **kwargs):
-    from env_intel.intel_game import run_from_file
+    from variants.asymmetric.intel_game import run_from_file
 
     message_file = 'json_files/task_asymmetric_positive.json' if kwargs.get('positive', True) else 'json_files/task_asymmetric.json'
     task_info = {
@@ -131,7 +131,7 @@ def load_and_run_asymmetric(input_json, name, model, experiment_output, **kwargs
     run_from_file(input_json, model, int(kwargs['load_turn_count']), task_info, output_path, **kwargs)
     
 def define_games(name, output, **kwargs):
-    from env_intel.intel_env import IntelEnv
+    from variants.asymmetric.intel_env import IntelEnv
     from game_memory import IntelGameMemory
     message_file = 'json_files/task_asymmetric_positive.json' if kwargs.get('positive', True) else 'json_files/task_asymmetric.json'
     task_info = {
@@ -186,51 +186,51 @@ def launch_slurm(name, count, run_type, slurm_output, model, experiment_output, 
 
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--name", type=str, default="")
-    parser.add_argument("--type", type=int, choices=EXP_NAMES.keys(), default=1)
-    parser.add_argument('--count', type=int, default=0)
-    parser.add_argument("--model", type=str)
-    parser.add_argument('--gpu_count', type=int, default=0)
-    parser.add_argument("--output", default=None)
-    parser.add_argument('--suspect_count', type=int, default=6)
-    parser.add_argument('--positive', action='store_true')
-    parser.add_argument('--json_file', type=str, default="")
-    parser.add_argument('--load_turn_count', type=int, default=0)
-    parser.add_argument('--game_length', type=int, default=MAX_TURN_COUNT)
-    args = parser.parse_args()
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--name", type=str, default="")
+#     parser.add_argument("--type", type=int, choices=EXP_NAMES.keys(), default=1)
+#     parser.add_argument('--count', type=int, default=0)
+#     parser.add_argument("--model", type=str)
+#     parser.add_argument('--gpu_count', type=int, default=0)
+#     parser.add_argument("--output", default=None)
+#     parser.add_argument('--suspect_count', type=int, default=6)
+#     parser.add_argument('--positive', action='store_true')
+#     parser.add_argument('--json_file', type=str, default="")
+#     parser.add_argument('--load_turn_count', type=int, default=0)
+#     parser.add_argument('--game_length', type=int, default=MAX_TURN_COUNT)
+#     args = parser.parse_args()
 
-    experiment_output = args.output
-    if experiment_output is None:
-        experiment_output = f'run_results/{args.name}/output/'
-    elif args.count > 0:
-        experiment_output = experiment_output + '/{args.name}'
+#     experiment_output = args.output
+#     if experiment_output is None:
+#         experiment_output = f'run_results/{args.name}/output/'
+#     elif args.count > 0:
+#         experiment_output = experiment_output + '/{args.name}'
     
-    slurm_output = f"run_results/{args.name}/slurm_meta/"
-    if args.count > 0:
-        print("Launching on slurm")
-        launch_slurm(args.name, args.count, args.type, slurm_output, args.model, experiment_output, args.gpu_count)
-        print("Done! Use: | squeue --state all --me | to inspect")
-        exit()
+#     slurm_output = f"run_results/{args.name}/slurm_meta/"
+#     if args.count > 0:
+#         print("Launching on slurm")
+#         launch_slurm(args.name, args.count, args.type, slurm_output, args.model, experiment_output, args.gpu_count)
+#         print("Done! Use: | squeue --state all --me | to inspect")
+#         exit()
 
 
-    print(f"Running experiment: {experiment_output} ({args.type})")
-    if experiment_output.endswith('/'):
-        url_path = '/'.join(experiment_output.split('/')[:-2]) + '/server/url_path.txt'
-    else:
-        url_path = '/'.join(experiment_output.split('/')[:-1]) + '/server/url_path.txt'
-    print(f"Loading url from: {url_path}")
-    if os.path.exists(url_path):
-        print("path exists")
-        with open(url_path, 'r') as f:
-            url = f.readlines()[0].strip()
-        print(f"Loaded url: {url}")
-    else:
-        print("invalid path")
-        url = None
-    other_values = {'suspect_count': args.suspect_count, 'url': url, 'positive': args.positive, 'gpu_count': args.gpu_count, 
-                    'json_file': args.json_file, 'load_turn_count': args.load_turn_count, 'game_length': args.game_length}
-    experiment = EXP_FUNCS[args.type]
-    experiment(args.name, args.model, experiment_output, **other_values)
-    print("Done")
+#     print(f"Running experiment: {experiment_output} ({args.type})")
+#     if experiment_output.endswith('/'):
+#         url_path = '/'.join(experiment_output.split('/')[:-2]) + '/server/url_path.txt'
+#     else:
+#         url_path = '/'.join(experiment_output.split('/')[:-1]) + '/server/url_path.txt'
+#     print(f"Loading url from: {url_path}")
+#     if os.path.exists(url_path):
+#         print("path exists")
+#         with open(url_path, 'r') as f:
+#             url = f.readlines()[0].strip()
+#         print(f"Loaded url: {url}")
+#     else:
+#         print("invalid path")
+#         url = None
+#     other_values = {'suspect_count': args.suspect_count, 'url': url, 'positive': args.positive, 'gpu_count': args.gpu_count, 
+#                     'json_file': args.json_file, 'load_turn_count': args.load_turn_count, 'game_length': args.game_length}
+#     experiment = EXP_FUNCS[args.type]
+#     experiment(args.name, args.model, experiment_output, **other_values)
+#     print("Done")
