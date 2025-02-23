@@ -24,7 +24,7 @@ def run_asymmetric(name, model, experiment_output, **kwargs):
     print("Output path: " + experiment_output)
     random_envs = kwargs.get('game_count', 50)
     
-    message_file = 'json_files/task_asymmetric_positive.json' if kwargs.get('positive', False) else 'json_files/task_asymmetric.json'
+    message_file = 'json_files/messages_asymmetric_positive.json' if kwargs.get('positive', False) else 'json_files/messages_asymmetric.json'
     task_info = {
         "general": {
             "suspect_count": kwargs.get('suspect_count', 6)
@@ -51,7 +51,7 @@ KNOWLEDGE_SIZE = 3
 def define_games_symmetric(name, output, **kwargs):
     from variants.symmetric.symm_env import SymmEnv
     from game_memory import SymmGameMemory
-    message_file = 'json_files/messages_facts_positive.json' if kwargs.get('positive', True) else 'json_files/messages_facts_positive.json'
+    message_file = 'json_files/messages_facts_positive.json'
     task_info = {
         "general": {
             "suspect_count": kwargs.get('suspect_count', 6),

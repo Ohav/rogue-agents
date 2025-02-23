@@ -13,7 +13,7 @@ DEFAULT_TASK_INFO = {
         "golden_intel": False,
         'max_turn_count': 31
     },
-    "message_file": 'json_files/task_asymmetric.json'
+    "message_file": 'json_files/messages_asymmetric_positive.json'
 }
 
 
