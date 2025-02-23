@@ -89,7 +89,6 @@ def launch_job(name, index, output, gpu_count, **kwargs):
 
 
 def load_and_run_symmetric_games(game_list, output_path, model_info, run_parameters):
-    rerun_mapping = dict()
     args_dict = {'url': model_info.get('url', ''), 'gpu_count': model_info.get('gpu_count', 0), 
                  'agent': dict(), 'load_turn_count': 0}
 
@@ -124,7 +123,7 @@ def load_and_run_symmetric_games(game_list, output_path, model_info, run_paramet
 def load_and_run_games(game_list, output_path, model_info, run_parameters):
     if run_parameters['symmetric']:
         return load_and_run_symmetric_games(game_list, output_path, model_info, run_parameters)
-    rerun_mapping = dict()
+    
     args_dict = {'url': model_info.get('url', ''), 'gpu_count': model_info.get('gpu_count', 0), 
                  'intel': dict(), 'accuser': dict(), 'load_turn_count': 0}
 
@@ -147,8 +146,6 @@ def load_and_run_games(game_list, output_path, model_info, run_parameters):
         json.dump(args_dict, f, indent=4)
     
     print("Argument dictionary: " + ', '.join([f'{k}={args_dict[k]}' for k in args_dict.keys()]))
-
-    stage_name = run_parameters.get('stage_name', '')
 
     for game_file in game_list:
         game_name = game_file.split('/')[-1].split('.')[0]
