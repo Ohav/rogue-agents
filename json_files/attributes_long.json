@@ -1,0 +1,24 @@
+{
+  "hat": ["brown", "black"],
+  "mood": ["happy", "sad"],
+  "shirt_color": ["pink", "green"],
+  "hobby": ["basketball", "dancing"],
+  "pants": ["long", "short"],
+  "pants_color": ["brown", "black"],
+  "eye_color": ["blue", "brown"],
+  "eye_glasses": ["circular", "square"],
+  "shirt": ["button-up", "tee"],
+  "shoe_color": ["red", "white"],
+  "hair": ["long", "short"],
+  "watch": ["bronze", "silver"],
+
+  "socks": ["dotted", "white"], 
+  "jacket": ["yellow", "jean"],
+  "height": ["short", "tall"],
+  "age": ["young", "old"], 
+  "build": ["medium", "muscular"],
+  "personality": ["introverted", "extroverted"], 
+  "interests": ["sports", "arts"],
+  "occupation": ["professional", "student"]
+
+}

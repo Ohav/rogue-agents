@@ -1,0 +1,14 @@
+{
+  "hat": ["brown", "black"],
+  "mood": ["happy", "sad"],
+  "shirt_color": ["pink", "green"],
+  "hobby": ["basketball", "dancing"],
+  "pants": ["long", "short"],
+  "pants_color": ["brown", "black"],
+  "eye_color": ["blue", "brown", "green"],
+  "eye_glasses": ["circular", "square"],
+  "shirt": ["button-up", "tee"],
+  "shoe_color": ["red", "white"],
+  "hair": ["long", "short"],
+  "watch": ["bronze", "silver"]
+}

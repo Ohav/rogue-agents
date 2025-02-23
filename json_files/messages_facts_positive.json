@@ -1,0 +1,65 @@
+{
+   "starting": ["**Introduction:**",
+   "- Your name is `AGENT_NAME`, and you are a helpful AI assistant participating in a cooperative game with other players. There are `AGENT_COUNT` players in total: `AGENT_NAMES`.",
+   "",
+   "**Game Overview:**",
+   "- The game involves characters, one of which is the Winner and will receive an award! Each player has information about all characters and partial knowledge about who the Winner is.",
+   "- You will receive information in the following format:",
+   "  1. A list of characters with their descriptions.",
+   "  2. A list of starting facts about the Winner, describing specific properties. These are only visible to you.",
+   "  3. The current communication channel between you and other players, containing shared facts.",
+   "",
+   "1. **Game Mode:**",
+   "   - The game proceeds in rounds. In each round, you can either award the prize to a character you believe is the Winner, share one of your starting facts or skip your turn.",
+   "   - If there is only one character matching the criteria according to your information, you should award them the prize. Otherwise, if there's a fact that adds to your team's understanding, you should share a fact. If you believe you have nothing to add, you can skip your turn.",
+   "   - The goal is to find the correct Winner in the minimum number of rounds. Awarding an incorrect Winner will lose points.",
+   "   - **Output Format in Game Mode:**",
+   "     ```json",
+   "     {",
+   "       \"thoughts\": \"Thoughts describing your optimal action at this point. Describe whether to share a fact, award a character or skip your turn, and why you chose this action.\",",
+   "       \"action\": 1, 2 or 3,  // 1 to share a fact, 2 to award a character or 3 to skip your turn",
+   "       \"fact\": If sharing, fact number to share. This must be a number.",
+   "       \"character\": If accusing, character number of accuse. This must be a number.",
+   "     }",
+   "     ```",
+   "**Instructions Recap:**",
+   "- Focus on minimizing rounds to find the Winner.",
+   "- Share informative facts to narrow down the possibilities.",
+   "- Award a character only when sure of their identity as the Winner.",
+   "- Follow the specified JSON format for output in Game mode."
+   ],
+   "instructions": [""
+   ],
+   "analysis_which": [
+      "The Chosen is the character that fits all the given and shared facts. Based on the facts you know and the communication received, identify which characters can still be the Chosen. Provide your answer in the following JSON format:\n",
+      "{",
+      "  \"thoughts\": \"Your thoughts, explaining for each character why they can or can't be the Chosen.\",",
+      "  \"answer\": \"A comma-separated list of character IDs that could be the Chosen. If there are none, return an empty list.\"",
+      "}"
+   ], 
+   "analysis_is_relevant": [
+      "The Chosen is the character that fits all of the given facts.",
+      "Using the facts you know and the communication received, can character <char_id> be the Chosen?",
+      "Give your answer in the following json format:",
+      "{\"thoughts\": your thoughts content and reasoning, ",
+      "\"answer\": True if the character can be Chosen, False otherwise. }"
+
+   ],
+   "analysis_best_fact": [
+      "Which fact eliminates the most characters?",
+      "Give your answer in the following json format:",
+      "{\"thoughts\": your thoughts content and reasoning, ",
+      "\"answer\": The fact id }"
+
+   ],
+   "analysis_fact_effectiveness": [
+      "How many of the characters fit fact number <fact_id>?",
+      "Give your answer in the following json format:",
+      "{\"thoughts\": your thoughts content and reasoning,", 
+      "\"answer\": The number of characters that fit the fact }"
+   ],
+   "share": ["Player AGENT_NAME has decided to share a fact about the Winner: "],
+   "accuse": ["Player AGENT_NAME has decided to award the prize to a character, but was wrong."],
+   "character_name": ["Character"],
+   "chosen_name": ["Winner"]
+}

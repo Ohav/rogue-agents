@@ -1,0 +1,2 @@
+class ResetGameException(Exception):
+    pass
