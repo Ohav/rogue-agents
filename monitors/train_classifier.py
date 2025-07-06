@@ -210,7 +210,7 @@ def train_game(net, train_games, test_games, name, num_epochs=10, learning_rate=
     net.load_state_dict(best_model)
     recall, precision, f1_score, ratio = test_model(net, test_games)
     print(f'Recall: {recall:.3f} -- Precision {precision:.3f} -- Reset ratio: {ratio:.3f} -- F1 Score {f1_score}')
-    torch.save(best_model, f'/home/morg/students/ohavbarbi/multiAgent/monitors/models/{name}_best_input_{net.input_size}.pth')
+    torch.save(best_model, f'monitors/models/{name}_best_input_{net.input_size}.pth')
 
     return net
 

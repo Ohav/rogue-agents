@@ -2,6 +2,9 @@ import argparse, glob, os, json, sys
 from experiments import run_asymmetric, load_and_run_asymmetric, define_games, load_and_run_symmetric, define_games_symmetric
 import itertools
 import shutil
+import sys
+
+SLURM_PARTITION = sys.env['SLURM_PART']
 
 
 def copy_classifier(classifier_path, destination_dir, name):
@@ -24,13 +27,11 @@ def launch_on_slurm(name, original_output, job_count, gpu_count=1, **kwargs):
         launch_job(name, None, output, gpu_count, **kwargs)
     else:
         launch_job_tasks(name, output, job_count, gpu_count)
-        # for i in range(job_count):
-            # launch_job(name, i, output, gpu_count, **kwargs)
 
 def launch_job_tasks(name, output, job_count, gpu_count):
     job_name = name
     slurm_output = output + name + '/slurm/'
-    partition = 'gpu-h100-killable' if gpu_count > 0 else 'killable'
+    partition = SLURM_PARTITION
     slurm_template = "#! /bin/sh\n" \
                 "#SBATCH --job-name={job_name} \n" \
                 "#SBATCH --output={slurm_output}{job_name}.out\n" \
@@ -58,7 +59,7 @@ def launch_job_tasks(name, output, job_count, gpu_count):
 def launch_job(name, index, output, gpu_count, **kwargs):
     job_name = f"{name}_{index}" if index is not None else name
     slurm_output = output + name + '/slurm/'
-    partition = 'gpu-h100-killable' if gpu_count > 0 else 'killable'
+    partition = SLURM_PARTITION
     slurm_template = "#! /bin/sh\n " \
                 "#SBATCH --job-name={job_name} \n" \
                 "#SBATCH --output={slurm_output}{job_name}.out\n" \
@@ -277,7 +278,7 @@ if __name__ == "__main__":
             if args.url:
                 argument_dict['url'] = args.url
             else:
-                argument_dict['url'] = f'http://{args.node}.cs.tau.ac.il:8000/v1/'
+                raise Exception("Unsupported, must have URL in arguments")
         if args.suspect_count is not None:
             argument_dict['suspect_count'] = args.suspect_count
         if args.new_name is not None:
