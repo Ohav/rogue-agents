@@ -11,7 +11,7 @@ DEFAULT_TASK_INFO = {
         "suspect_count": 20,
         'max_turn_count': 20
     },
-    "message_file": 'json_files/messages_facts_positive.json'
+    "message_file": 'json_files/messages_symmetric_positive.json'
 }
 
 

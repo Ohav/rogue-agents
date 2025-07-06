@@ -122,6 +122,7 @@ def load_and_run_asymmetric(input_json, name, model, experiment_output, **kwargs
     output_path = experiment_output + f'/{name}.json'
     
     complete = kwargs.get('complete', False)
+    complete = True
     print(output_path)
     if complete and os.path.exists(output_path):
         print("skip")

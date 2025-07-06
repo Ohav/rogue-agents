@@ -1,6 +1,4 @@
-import sys
-sys.path.append('/home/morg/students/ohavbarbi/multiAgent/')
-import argparse, glob, os, json
+import argparse, glob, os, json, sys
 from experiments import run_asymmetric, load_and_run_asymmetric, define_games, load_and_run_symmetric, define_games_symmetric
 import itertools
 import shutil
@@ -44,8 +42,6 @@ def launch_job_tasks(name, output, job_count, gpu_count):
                 "#SBATCH --gpus={gpu_count}\n" \
                 "#SBATCH --ntasks={job_count}\n" \
                 "#SBATCH --cpus-per-task=4\n" \
-                "#SBATCH --exclude=rack-gww-dgx1\n" \
-                "cd /home/morg/students/ohavbarbi/multiAgent/\n" \
                 "for i in $(seq 1 {job_count}); do\n" \
                 "  srun -n1 -c1 --mem-per-cpu=2000M {python_command} --id $((i-1)) &\n"\
                 "done\n" \
@@ -72,9 +68,6 @@ def launch_job(name, index, output, gpu_count, **kwargs):
                 "#SBATCH --time=1440\n" \
                 "#SBATCH --nodes=1\n" \
                 "#SBATCH --gpus={gpu_count}\n" \
-                "#SBATCH --exclude=rack-gww-dgx1\n" \
-                "source /a/home/cc/students/cs/ohavbarbi/.bashrc\n" \
-                "cd /home/morg/students/ohavbarbi/multiAgent/\n" \
                 "{python_command}\n"
     python_command = 'python ' + ' '.join([v for v in sys.argv if v != '--slurm'])
 

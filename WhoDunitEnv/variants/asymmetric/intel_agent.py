@@ -21,6 +21,7 @@ class IntelAgent:
         self.comm_channel = None
         self.errors = None
         self.blunders = None
+        self.last_answer_monitor_token = {k: None for k in ['entropy', 'varentropy', 'kurtosis']}
         self.last_answer_entropy = -2
         self.last_answer_varentropy = -2
         self.last_answer_kurtosis = 0
@@ -51,7 +52,9 @@ class IntelAgent:
         return self.last_answer_entropy, self.last_answer_varentropy, self.last_answer_kurtosis
 
     def features_for_char_times_action(self, limit=5):
-        relevant_features = {'entropy': [], 'varentropy': [], 'kurtosis': []}
+        relevant_features = {'entropy': {'scores': [], 'tokens': []},
+                             'varentropy': {'scores': [], 'tokens': []},
+                             'kurtosis': {'scores': [], 'tokens': []}}
         collected = {'character': [], 'action': []}
         logprobs = self.pipe.get_last_logprobs()
         # Logprobs is a list. Each element is a generation, i.e. a list of (token, prob) pairings for that specific location
@@ -66,33 +69,41 @@ class IntelAgent:
                             break
                         found = utils.try_int(logprobs[index][0][0].strip()) >= 0
                     if found:
-                        collected[text].append([p[1] for p in logprobs[index]])
+                        tokens = [p[0] for p in logprobs[index]]
+                        index_logprobs = [p[1] for p in logprobs[index]]
+                        collected[text].append({'tokens': tokens, 'logprobs': index_logprobs})
 
         if len(collected['character']) == 0 or (len(collected['action']) == 0):
             if len(collected['character']) == 0 and (len(collected['action']) == 0):
-                relevant_features['entropy'] = [-2]
-                relevant_features['varentropy'] = [-2]
-                relevant_features['kurtosis'] = [0]
+                relevant_features['entropy']['scores'] = [-2]
+                relevant_features['varentropy']['scores'] = [-2]
+                relevant_features['kurtosis']['scores'] = [0]
+                for k in relevant_features.keys():
+                    relevant_features[k]['tokens'] = ["None"] 
 
             else:
                 for k in relevant_features.keys():
-                    relevant_features[k] = [utils.get_score(np.array(logs), k) for logs in (collected['action'] + collected['character'])] 
+                    relevant_features[k]['scores'] = [utils.get_score(np.array(logs['logprobs']), k) for logs in (collected['action'] + collected['character'])]
+                    relevant_features[k]['tokens'] = [logs['tokens'] for logs in (collected['action'] + collected['character'])]
             
             return relevant_features
 
         for i,j in itertools.product(range(len(collected['character'])), range(len(collected['action']))):
-            char_logprobs = collected['character'][i]
-            act_logprobs = collected['action'][j]
-            combined = np.array([p1 + p2 for p1 in char_logprobs for p2 in act_logprobs])
+            char_location = collected['character'][i]
+            act_location = collected['action'][j]
+            combined = np.array([p1 + p2 for p1 in char_location['logprobs'] for p2 in act_location['logprobs']])
             for k in relevant_features.keys():
-                relevant_features[k].append(utils.get_score(combined, k))
+                relevant_features[k]['scores'].append(utils.get_score(combined, k))
+                relevant_features[k]['tokens'].append(char_location['tokens'] + act_location['tokens'])
         return relevant_features
 
     def max_agent_entropy(self):
         feature_dictionary = self.features_for_char_times_action()
-        self.last_answer_entropy = max(feature_dictionary['entropy'])
-        self.last_answer_varentropy = max(feature_dictionary['varentropy'])
-        self.last_answer_kurtosis = max(feature_dictionary['kurtosis'])
+        self.last_answer_entropy = max(feature_dictionary['entropy']['scores'])
+        self.last_answer_varentropy = max(feature_dictionary['varentropy']['scores'])
+        self.last_answer_kurtosis = max(feature_dictionary['kurtosis']['scores'])
+        for k in feature_dictionary.keys():
+            self.last_answer_monitor_token[k] = feature_dictionary[k]['tokens'][np.argmax(feature_dictionary[k]['scores'])]
         
     def act(self, env):
         if self.intervention_manager is None:

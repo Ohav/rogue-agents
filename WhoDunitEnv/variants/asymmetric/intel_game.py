@@ -63,7 +63,7 @@ def run_from_file(json_file, model, turn, task_info, path, **kwargs):
     finished = False
     while not finished:
         try:
-            for v in game_loop(env, memory, dump_features=kwargs.get('dump_features', False)):
+            for v in game_loop(env, memory, dump_features=kwargs.get('dump_features', True)):
                 pass
             finished = True
         except ResetGameException as e:

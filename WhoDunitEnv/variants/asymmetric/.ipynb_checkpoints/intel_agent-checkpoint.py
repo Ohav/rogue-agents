@@ -1,12 +1,12 @@
 import numpy as np
-from consts import get_share_message, MAX_FORMAT_ATTEMPTS, DEFAULT_TEMPERATURE
+from consts import MAX_FORMAT_ATTEMPTS, DEFAULT_TEMPERATURE
 import utils
 import itertools
 
-from variants.symmetric.errors import Errors, error_to_text, BadAnswerException
+from variants.asymmetric.errors import Errors, error_to_text, BadAnswerException
 DEBUG = False
 
-class SymmAgent:
+class IntelAgent:
     def __init__(self, llm_pipe, name, role, suspect_count, possible_properties, intervention_manager=None):
         self.pipe = llm_pipe
         self.system_prompt = {"role": "system",
@@ -14,15 +14,14 @@ class SymmAgent:
                               }
         
         self.name = name
-        self.role = 'detective'
-
-        self.culprit_knowledge = []
+        self.role = role
 
         self.suspect_count = suspect_count
         self.possible_properties = sorted(list(possible_properties))
         self.comm_channel = None
         self.errors = None
         self.blunders = None
+        self.last_answer_monitor_token = {k: None for k in ['entropy', 'varentropy', 'kurtosis']}
         self.last_answer_entropy = -2
         self.last_answer_varentropy = -2
         self.last_answer_kurtosis = 0
@@ -53,8 +52,10 @@ class SymmAgent:
         return self.last_answer_entropy, self.last_answer_varentropy, self.last_answer_kurtosis
 
     def features_for_char_times_action(self, limit=5):
-        relevant_features = {'entropy': [], 'varentropy': [], 'kurtosis': []}
-        collected = {'character': [], 'action': []} #, 'fact': []}
+        relevant_features = {'entropy': {'scores': [], 'tokens': []},
+                             'varentropy': {'scores': [], 'tokens': []},
+                             'kurtosis': {'scores': [], 'tokens': []}}
+        collected = {'character': [], 'action': []}
         logprobs = self.pipe.get_last_logprobs()
         # Logprobs is a list. Each element is a generation, i.e. a list of (token, prob) pairings for that specific location
         for i in range(len(logprobs)):
@@ -68,54 +69,47 @@ class SymmAgent:
                             break
                         found = utils.try_int(logprobs[index][0][0].strip()) >= 0
                     if found:
-                        collected[text].append([p[1] for p in logprobs[index]])
+                        tokens = [p[0] for p in logprobs[index]]
+                        index_logprobs = [p[1] for p in logprobs[index]]
+                        collected[text].append({'tokens': tokens, 'logprobs': index_logprobs})
 
-        collected['info'] = collected['character']
-        del collected['character']
-        # del collected['fact']
-
-        if len(collected['info']) == 0 or (len(collected['action']) == 0):
-            if len(collected['info']) == 0 and (len(collected['action']) == 0):
-                relevant_features['entropy'] = [-2]
-                relevant_features['varentropy'] = [-2]
-                relevant_features['kurtosis'] = [0]
+        if len(collected['character']) == 0 or (len(collected['action']) == 0):
+            if len(collected['character']) == 0 and (len(collected['action']) == 0):
+                relevant_features['entropy']['scores'] = [-2]
+                relevant_features['varentropy']['scores'] = [-2]
+                relevant_features['kurtosis']['scores'] = [0]
+                for k in relevant_features.keys():
+                    relevant_features[k]['tokens'] = ["None"] 
 
             else:
                 for k in relevant_features.keys():
-                    relevant_features[k] = [utils.get_score(np.array(logs), k) for logs in (collected['action'] + collected['info'])] 
+                    relevant_features[k]['scores'] = [utils.get_score(np.array(logs['logprobs']), k) for logs in (collected['action'] + collected['character'])]
+                    relevant_features[k]['tokens'] = [logs['tokens'] for logs in (collected['action'] + collected['character'])]
             
             return relevant_features
 
-        for i,j in itertools.product(range(len(collected['info'])), range(len(collected['action']))):
-            char_logprobs = collected['info'][i]
-            act_logprobs = collected['action'][j]
-            combined = np.array([p1 + p2 for p1 in char_logprobs for p2 in act_logprobs])
+        for i,j in itertools.product(range(len(collected['character'])), range(len(collected['action']))):
+            char_location = collected['character'][i]
+            act_location = collected['action'][j]
+            combined = np.array([p1 + p2 for p1 in char_location['logprobs'] for p2 in act_location['logprobs']])
             for k in relevant_features.keys():
-                relevant_features[k].append(utils.get_score(combined, k))
+                relevant_features[k]['scores'].append(utils.get_score(combined, k))
+                relevant_features[k]['tokens'].append(char_location['tokens'] + act_location['tokens'])
         return relevant_features
 
     def max_agent_entropy(self):
         feature_dictionary = self.features_for_char_times_action()
-        self.last_answer_entropy = max(feature_dictionary['entropy'])
-        self.last_answer_varentropy = max(feature_dictionary['varentropy'])
-        self.last_answer_kurtosis = max(feature_dictionary['kurtosis'])
+        self.last_answer_entropy = max(feature_dictionary['entropy']['scores'])
+        self.last_answer_varentropy = max(feature_dictionary['varentropy']['scores'])
+        self.last_answer_kurtosis = max(feature_dictionary['kurtosis']['scores'])
+        for k in feature_dictionary.keys():
+            self.last_answer_monitor_token[k] = feature_dictionary[k]['tokens'][np.argmax(feature_dictionary[k]['scores'])]
         
-    def get_knowledge_description(self):
-        description = f"You received the following starting facts about the Winner (these are the facts you may share):\n"
-        for i in range(len(self.culprit_knowledge)):
-            fact = self.culprit_knowledge[i]
-            description += f"{i + 1}. {get_share_message(fact[0], fact[1])}.\n"
-        return description
-
     def act(self, env):
         if self.intervention_manager is None:
-            prompt = '\n'.join([self.get_knowledge_description(),  env.get_communication_message(self)])
+            prompt = env.get_communication_message()
             return self.prompt(prompt), "None"
         return self.intervention_manager.act(self)
-
-    def add_knowledge(self, facts):
-        for fact in facts:
-            self.culprit_knowledge.append(fact)
 
     def prompt(self, message, validate=True, temperature=DEFAULT_TEMPERATURE):
         prompts, answers, validations = self.batch_prompt([message], validate, temperature=temperature)
@@ -183,6 +177,7 @@ class SymmAgent:
             raise BadAnswerException(err_str)
         return validated, answer
 
+    
     def validate_answer(self, answer_dict):
         if 'thoughts' not in answer_dict:
             return Errors.MISSING_THOUGHTS
@@ -190,25 +185,62 @@ class SymmAgent:
             return Errors.MISSING_ACTION
         action = utils.try_int(answer_dict['action'])
 
-        if action not in [1, 2, 3]: # Share, Accuse or Skip
-            return Errors.BAD_ACTION
-    
-        if action == 1:
-            # Request(1) requires a fact number
-            if 'fact' not in answer_dict:
-                return Errors.MISSING_FACT
-            fact_index = utils.try_int(answer_dict['fact'])
-            if not (0 < fact_index <= len(self.culprit_knowledge)):
-                return Errors.BAD_FACT
+        # Accuser segment
+        if self.role == 'accuser':
+            if action not in [1, 2, 3]:
+                return Errors.BAD_ACTION
+        
+            if action in [1, 3]:
+                # Request(1) and accuse(3) require a character
+                if 'character' not in answer_dict:
+                    return Errors.MISSING_CHARACTER
+                character = utils.try_int(answer_dict['character'])
+                if not (0 < character <= self.suspect_count):
+                    return Errors.BAD_CHARACTER
+                    
+                if action == 1:
+                    if 'property' not in answer_dict:
+                        return Errors.MISSING_PROPERTY
+                    if answer_dict['property'] not in self.possible_properties:
+                        return Errors.BAD_PROPERTY
+                    if 'value' not in answer_dict:
+                        return Errors.MISSING_VALUE
+                    # TODO: Check value?
+            # else action == 2 -> no checks needed
                 
-        if action == 2:
-            if 'character' not in answer_dict:
-                return Errors.MISSING_CHARACTER
-            accused_suspect = utils.try_int(answer_dict['character'])
-            if not (0 < accused_suspect <= self.suspect_count):
-                return Errors.BAD_CHARACTER
+        # Intel segment
+        elif self.role == 'intel':
+            # If the action is not the correct one asked for, that is a "mistake" and not a format error
+            if action not in [1, 2]:
+                return Errors.BAD_ACTION
+            if 'value' not in answer_dict:
+                return Errors.MISSING_VALUE
+
+            if action == 1:
+                try:
+                    value = utils.try_bool(answer_dict['value'])
+                except ValueError as e:
+                    return Errors.BAD_VALUE_1
+            
+            if action == 2:  # Broad message
+                value = answer_dict['value']
+                if '-' not in value:
+                    return Errors.BAD_VALUE_2
+                value = value.split('-')
+                prop, val = value[0], value[1]
+                if prop not in self.possible_properties:
+                    return Errors.BAD_PROPERTY
+                # TODO: Check value?
+
+                if 'character' not in answer_dict:
+                    return Errors.MISSING_CHARACTER_LIST
+                try:
+                    characters = eval(answer_dict['character'])
+                except Exception as e:
+                    return Errors.BAD_CHARACTER_LIST
             
         return Errors.NO_ERROR
 
+    
     def set_system_prompt(self, system_prompt):
-        self.system_prompt['content'] = system_prompt.replace("AGENT_NAME", self.name)
+        self.system_prompt['content'] = system_prompt

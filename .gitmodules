@@ -1,0 +1,7 @@
+[submodule "DyLAN"]
+	path = DyLAN
+	url = https://github.com/Ohav/DyLAN
+
+[submodule "GovSim"]
+	path = GovSim
+	url = https://github.com/Ohav/GovSim
